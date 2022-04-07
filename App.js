@@ -1,11 +1,67 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import MapView, { Marker } from 'react-native-maps';
+import { StyleSheet, Text, View, Dimensions } from 'react-native';
+import * as Location from 'expo-location';
 
 export default function App() {
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(location.coords);
+    })();
+  }, []);
+
+  let text = 'Waiting..';
+  if (errorMsg) {
+    text = errorMsg;
+  } else if (location) {
+    text = JSON.stringify(location);
+  }
+
+
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
+      <MapView style={styles.map} 
+      region={
+        !location?
+        {
+          latitude: 0,
+          longitude: 0,
+        }:
+        {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          latitudeDelta: 0.003,
+          longitudeDelta: 0.003,
+        }
+      }
+      >
+        <Marker coordinate={
+          !location?
+          {
+            latitude: 0,
+            longitude: 0,
+          }:
+          {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+          }
+        } 
+        title="I'm here"
+        />
+      </MapView>
+      <Text style={styles.paragraph}>{text}</Text>
     </View>
   );
 }
@@ -16,5 +72,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  map: {
+    width: Dimensions.get('window').width,
+    height: '80%'
   },
 });
